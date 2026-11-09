@@ -26,7 +26,9 @@ including both `bin\x64` and `bin`. You normally do not need to copy DLLs,
 change PATH, install Python, or install Visual Studio to run the miner.
 Build tools are only needed when compiling BRminer from source.
 
-CUDA Toolkit 13.4/NVRTC 13.4.92 and CUDA 12.9/NVRTC 12.9.86 were tested.
+CUDA Toolkit 13.4/NVRTC 13.4.92 and CUDA 12.9/NVRTC 12.9.86 were tested in the
+November 2 validation; Windows Toolkit 13.4 also passed the November 9 release
+smoke check. These are tested versions, not a claim about the newest release.
 Choose a version that supports your GPU and driver; a newer Toolkit can drop
 older GPU architectures. The NVIDIA driver alone does not normally supply
 NVRTC. The Toolkit's NVRTC runtime includes a matching compiler and builtins
@@ -80,6 +82,10 @@ them to BRminer packages. The helper requires Python 3.12+ and curl.
 - An unsupported architecture or driver error needs a compatible Toolkit/driver combination.
 - Normal automatic mining tries CUDA, then OpenCL, then CPU. Confirm the backend printed at startup.
 - Optional NVML monitoring comes from the NVIDIA driver; unavailable readings show `N/A`.
+
+The interactive [mining dashboard](warthog-portability.md#mining-console-windows-and-linux)
+is separate from CUDA availability. Benchmark commands use plain progress output;
+a successful CUDA benchmark does not need to open the full-screen dashboard.
 
 See NVIDIA's [Windows installation guide](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html)
 and [NVRTC documentation](https://docs.nvidia.com/cuda/nvrtc/) for component and

@@ -616,7 +616,7 @@ bool confirmGpuCandidate(MinerState& state, const std::shared_ptr<const MiningJo
 		(static_cast<std::uint32_t>(full_sha_hash[1]) << 16) |
 		(static_cast<std::uint32_t>(full_sha_hash[2]) << 8) | full_sha_hash[3]};
 	if (confirmed_word != candidate.sha_word) {
-		state.console.event("ERROR: GPU SHA256t candidate failed CPU confirmation.");
+		state.console.event("ERROR: GPU SHA256t candidate failed CPU confirmation.", ConsoleEventLevel::error);
 		return true;
 	}
 	const PowResult confirmed{checkJanusHash(candidate_header, full_sha_hash,
@@ -840,6 +840,7 @@ void publishNotify(MinerState& state, const Notify& notify, const std::vector<st
 	state.job = std::make_shared<const MiningJob>(std::move(job));
 	state.active_job_id.store(state.job->id, std::memory_order_release);
 	state.changed.notify_all();
+	state.console.connection(MiningConnection::mining);
 }
 
 void handleStratumMessage(MinerState& state, const UniValue& message, bool& subscribed, bool& authorized,
@@ -861,12 +862,12 @@ void handleStratumMessage(MinerState& state, const UniValue& message, bool& subs
 				if (pending_block_candidate) {
 					state.accepted_blocks.fetch_add(1, std::memory_order_relaxed);
 				}
-				state.console.event(pending_block_candidate ? "BLOCK ACCEPTED by the Stratum server." : "Share accepted by the Stratum server.");
+				state.console.event(pending_block_candidate ? "BLOCK ACCEPTED by the Stratum server." : "Share accepted by the Stratum server.", ConsoleEventLevel::success);
 			}
 			else {
 				state.rejected_shares.fetch_add(1, std::memory_order_relaxed);
 				state.console.event(std::string{pending_block_candidate ? "BLOCK REJECTED" : "Share rejected"} +
-					(error.isNull() ? "." : ": " + error.write()));
+					(error.isNull() ? "." : ": " + error.write()), ConsoleEventLevel::warning);
 			}
 			state.console.shares(state.accepted_shares.load(std::memory_order_relaxed),
 				state.rejected_shares.load(std::memory_order_relaxed),
@@ -905,6 +906,7 @@ void handleStratumMessage(MinerState& state, const UniValue& message, bool& subs
 				throw std::runtime_error("Pool rejected the Warthog wallet address.");
 			}
 			authorized = true;
+			state.console.connection(MiningConnection::waiting);
 			state.console.event("Payout address authorized; waiting for work.");
 			if (subscribed && latest_notify) {
 				publishNotify(state, *latest_notify, extra_nonce1, extra_nonce2_size,
@@ -922,10 +924,12 @@ void handleStratumMessage(MinerState& state, const UniValue& message, bool& subs
 		if (params.size() != 1 || !params[0].isNum()) throw std::runtime_error("Pool sent an invalid share difficulty.");
 		difficulty = params[0].get_real();
 		if (!std::isfinite(difficulty) || difficulty <= 0.0) throw std::runtime_error("Pool sent a non-positive share difficulty.");
-		state.share_difficulty.store(difficulty, std::memory_order_relaxed);
-		std::ostringstream difficulty_message;
-		difficulty_message << "Share difficulty set to " << std::setprecision(5) << difficulty << '.';
-		state.console.event(difficulty_message.str());
+		const double previous_difficulty{state.share_difficulty.exchange(difficulty, std::memory_order_relaxed)};
+		if (difficulty != previous_difficulty) {
+			std::ostringstream difficulty_message;
+			difficulty_message << "Share difficulty set to " << std::setprecision(5) << difficulty << '.';
+			state.console.event(difficulty_message.str());
+		}
 		if (latest_notify && subscribed && authorized) {
 			publishNotify(state, *latest_notify, extra_nonce1, extra_nonce2_size,
 						  extra_nonce_counter, difficulty);
@@ -1254,7 +1258,7 @@ void gpuWorker(MinerState& state, std::size_t device_index,
 			state.gpu_error += error.what();
 		}
 		state.changed.notify_all();
-		state.console.event(std::string{"ERROR: GPU worker stopped: "} + error.what());
+		state.console.event(std::string{"ERROR: GPU worker stopped: "} + error.what(), ConsoleEventLevel::error);
 	}
 	if (registered) state.gpu_workers_ready.fetch_sub(1, std::memory_order_relaxed);
 }
@@ -1267,7 +1271,8 @@ void networkWorker(MinerState& state, std::string payout_address, brminer::PoolE
 		try {
 			SocketHandle socket{connectPool(endpoint)};
 			state.connected.store(true, std::memory_order_relaxed);
-			state.console.event("Connected to " + endpoint_name + '.');
+			state.console.connection(MiningConnection::connected);
+			state.console.event("Connected to " + endpoint_name + '.', ConsoleEventLevel::success);
 			sendAll(socket.get(), stratumRequest(kSubscribeId, "mining.subscribe", {"BRminer/1.0"}));
 			sendAll(socket.get(), stratumRequest(kAuthorizeId, "mining.authorize", {payout_address, "x"}));
 
@@ -1363,7 +1368,8 @@ void networkWorker(MinerState& state, std::string payout_address, brminer::PoolE
 			}
 			const auto now{std::chrono::steady_clock::now()};
 			if (last_error != error.what() || now - last_error_time >= std::chrono::seconds{10}) {
-				state.console.event("ERROR: pool connection error (" + endpoint_name + "): " + error.what());
+				state.console.connection(MiningConnection::reconnecting);
+				state.console.event("ERROR: pool connection error (" + endpoint_name + "): " + error.what(), ConsoleEventLevel::error);
 				last_error = error.what();
 				last_error_time = now;
 			}
@@ -1619,7 +1625,9 @@ static int runEngine(std::string_view payout_address, std::string_view thread_se
 		}
 	}
 	const std::string backend{gpu_devices.empty() ? "CPU" : (use_cuda ? "CUDA" : "OpenCL")};
-	state.console.start(backend, thread_count, benchmark_telemetry || benchmark, benchmark && benchmark->quiet);
+	state.console.start(backend, thread_count, benchmark_telemetry || benchmark, benchmark && benchmark->quiet,
+		{benchmark ? "offline benchmark" : endpoint.host + ":" + endpoint.port, processor, gpu_name,
+		 use_cuda ? cuda_pipeline : ""});
 	NvidiaMonitor monitor;
 	if (benchmark_result) {
 		benchmark_result->backend = backend;
@@ -1641,7 +1649,7 @@ static int runEngine(std::string_view payout_address, std::string_view thread_se
 	if (!gpu_detection_error.empty())
 		state.console.event("GPU detection: " + gpu_detection_error);
 	if (!gpu_devices.empty() && !monitor.available())
-		state.console.event("GPU monitoring unavailable: " + monitor.unavailableReason());
+		state.console.event("GPU monitoring unavailable: " + monitor.unavailableReason(), ConsoleEventLevel::warning);
 	std::vector<std::thread> workers;
 	const std::uint32_t cpu_mining_workers{gpu_devices.empty()
 		? thread_count : 0U};
@@ -1700,11 +1708,30 @@ static int runEngine(std::string_view payout_address, std::string_view thread_se
 	}
 	auto last_sample{std::chrono::steady_clock::now()};
 	const auto run_start{last_sample};
+	const bool live_display{state.console.isLive()};
+	MiningRateWindow display_rates;
+	display_rates.sample(0, state.cpu_sha256t_hashes.load(std::memory_order_relaxed),
+		state.gpu_sha256t_hashes.load(std::memory_order_relaxed), state.verushash_hashes.load(std::memory_order_relaxed));
+	auto next_display{run_start + std::chrono::seconds{1}};
 	double janus_work{};
 	const auto sample_period{std::chrono::seconds{benchmark ? 1 : 10}};
 	auto next_sample{last_sample + sample_period};
 	while (!g_stop_requested) {
 		while (!g_stop_requested && std::chrono::steady_clock::now() < next_sample) {
+			const auto display_now{std::chrono::steady_clock::now()};
+			if (live_display && display_now >= next_display) {
+				auto display{display_rates.sample(std::chrono::duration<double>(display_now - run_start).count(),
+					state.cpu_sha256t_hashes.load(std::memory_order_relaxed),
+					state.gpu_sha256t_hashes.load(std::memory_order_relaxed),
+					state.verushash_hashes.load(std::memory_order_relaxed))};
+				display.difficulty = state.share_difficulty.load(std::memory_order_relaxed);
+				display.accepted = state.accepted_shares.load(std::memory_order_relaxed);
+				display.rejected = state.rejected_shares.load(std::memory_order_relaxed);
+				display.blocks = state.accepted_blocks.load(std::memory_order_relaxed);
+				display.gpus = monitor.sample();
+				state.console.update(display);
+				next_display = display_now + std::chrono::seconds{1};
+			}
 			std::this_thread::sleep_for(std::chrono::milliseconds{50});
 		}
 		if (g_stop_requested) break;
@@ -1732,8 +1759,8 @@ static int runEngine(std::string_view payout_address, std::string_view thread_se
 			state.rejected_shares.load(std::memory_order_relaxed),
 			state.accepted_blocks.load(std::memory_order_relaxed)};
 		stats.gpus = monitor.sample();
-		if (!benchmark) state.console.update(stats);
-		else {
+		if (!benchmark && !live_display) state.console.update(stats);
+		else if (benchmark) {
 			const double start{std::chrono::duration<double>(last_sample - run_start).count()};
 			const double end{std::min(uptime, benchmark->warmup_seconds + benchmark->duration_seconds)};
 			if (end > benchmark->warmup_seconds) {
@@ -1834,6 +1861,7 @@ static int runEngine(std::string_view payout_address, std::string_view thread_se
 			state.filter_minimum_threshold.load(std::memory_order_relaxed),
 			state.filter_maximum_threshold.load(std::memory_order_relaxed)};
 	}
+	state.console.connection(MiningConnection::stopped);
 	state.console.event("Mining stopped.");
 	std::signal(SIGINT, previous_sigint);
 	std::signal(SIGTERM, previous_sigterm);

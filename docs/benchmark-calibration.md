@@ -14,7 +14,8 @@ brminer.exe --benchmark --backend cuda --duration 300 --warmup 30 --json benchma
 No node or wallet is required. `benchmark-warthog.bat` / `.sh` runs this command.
 An optional `--threads 14` fixes the worker count. Batch and block sizes can be
 fixed with `--cuda-batch-size 4194304 --cuda-block-size 256`.
-`--backend cpu` exercises the portable CPU path without a GPU.
+`--backend cpu` exercises CPU mining without a GPU, using the optimized or
+portable hashing path selected by runtime CPU feature checks.
 
 The deterministic `warthog-header-sequence-v1` workload starts with a fixed
 80-byte header (byte `i` initially equals `i * 17 + 11`, modulo 256), clears
@@ -32,6 +33,11 @@ deviation, descriptive sample error, stage rates, queue pressure, and monitoring
 The mean and deviation use interval durations as weights; a partial final sample
 does not receive the weight of a whole second. The reported sample error is
 descriptive, not a confidence interval for correlated mining samples.
+
+Benchmark output uses plain progress messages and JSON. The interactive mining
+dashboard refreshes once per second with rolling ten-second live rates; it is
+not the benchmark's one-second sample stream. Use exported benchmark JSON for
+repeatable measurements. See [mining console settings](warthog-portability.md#mining-console-windows-and-linux).
 
 Compare repeated runs of the same workload after warmup. Keep background load,
 driver, power settings, temperatures, and compiler consistent. An offline rate

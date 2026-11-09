@@ -1,19 +1,62 @@
-# BRminer 1.1.0 acceptance report
+# BRminer validation and acceptance reports
+
+## November 9, 2026 v1.2.0 console validation
+
+The `v1.2.0` source adds a colored numeric dashboard with each hashrate
+beside its label, one-second display refresh, rolling ten-second live rates,
+device telemetry and timestamped severity events. Changed rows are buffered into
+one write. `NO_COLOR` and plain-output modes are supported. Repeated difficulty
+values no longer produce duplicate event lines.
+
+Windows MSVC Release passed 18/18 CTest checks. Native Ubuntu 24.04/Clang 18 under
+Docker/WSL2 passed 20/20 with QEMU and pyte installed. The console checks cover
+numeric layouts, colors, `NO_COLOR`, resizing, immediate counters, terminal/cursor
+restoration and a real miner process refreshing before the ten-second control
+sample. The Stratum fixture checks first/changed difficulty announcements,
+duplicate suppression, acceptance/rejection and reconnects. CPU benchmark smoke
+checks also passed. Optional GPU test binaries explicitly skip execution when
+their runtime is absent; Linux CUDA/OpenCL execution was not exercised in this
+console-update environment. These changes do not add sustained performance or
+public-pool measurements.
+
+The Windows live renderer was also exercised in a native pseudoconsole. An
+isolated hidden classic-console fixture verifies that mouse Quick Edit is
+disabled during dashboard, plain-log and diagnostic output, Ctrl+C and the other
+input flags are preserved, clicks and minimizing do not block refreshes, and
+input/output modes are restored on exit. Quiet and redirected output leave the
+input mode unchanged.
+The reproducible checks are [console tests](../tests/warthog_console_tests.cpp),
+[Windows console tests](../tests/windows_console_test.py),
+[Linux terminal tests](../tests/linux_terminal_test.py),
+[Stratum lifecycle tests](../tests/stratum_lifecycle_test.py) and
+[release smoke verification](../scripts/verify-release.py).
+
+The [v1.2.0 release](https://github.com/JohnnyB813/BRminer/releases/tag/v1.2.0)
+includes the console update and Windows Quick Edit fix. The earlier
+[v1.1.0 release](https://github.com/JohnnyB813/BRminer/releases/tag/v1.1.0)
+targets `b3b1ad9` and predates these changes. Current user instructions are
+in [the build guide](build.md), [console guide](warthog-portability.md#mining-console-windows-and-linux)
+and [benchmark/calibration guide](benchmark-calibration.md).
+
+## November 2, 2026 acceptance report (historical)
 
 Completed on the available hardware on 2026-11-02. All four milestones retain
 their original scope; physical hardware coverage limits are listed below.
+The measurements, suite counts, calibration thresholds and timing below describe
+that earlier build. Later adaptive calibration changed the quick planner and
+promotion policy; use the current calibration guide for present behavior.
 
 Distribution policy was subsequently changed at the user's request: source and
 release archives exclude NVIDIA CUDA/NVRTC binaries. Install the Toolkit
 separately using [CUDA setup](cuda-setup.md). Earlier bundled-library smoke logs
-below remain historical validation of the same miner executable, not a list
+below remain historical validation of that earlier miner executable, not a list
 of files in the current archives. Final precommit builds/tests also cover whitespace-only cleanup of imported
 kernel/hash sources (`precommit-formatting-audit.json`). That cleanup changes
 the build identity, so earlier profiles invalidate normally. No new sustained
-performance claim is made for formatting changes. Current no-CUDA archive checks
+performance claim is made for formatting changes. That build's no-CUDA archive checks
 and tests using user-installed NVRTC are recorded in `out/bench/unbundled-release-audit.json`.
 
-## Acceptance checklist
+## November 2 acceptance checklist (historical)
 
 ### Shared benchmark
 
@@ -38,7 +81,7 @@ and tests using user-installed NVRTC are recorded in `out/bench/unbundled-releas
 ### Linux x86_64
 
 - [x] POSIX networking, dynamic libraries, CPU identification, feature-dispatched hashing, signals and terminal sizing work in the native Linux build.
-- [x] All 19 current Linux tests pass, including actual CUDA output checks, portable hashing, emulated older Intel/AMD CPUs, cache policy, optional NVML, benchmark, Stratum lifecycle and PTY rendering.
+- [x] All 19 then-registered Linux tests passed, including actual CUDA output checks, portable hashing, emulated older Intel/AMD CPUs, cache policy, optional NVML, benchmark, Stratum lifecycle and PTY rendering.
 - [x] Real solo-node jobs, authorization, controlled disconnect/reconnect and graceful shutdown were verified. Linux solo sessions totaled over an hour; they found no block.
 - [x] The final Linux package completed five minutes on the user-authorized HeroMiners pool with 14 accepted submissions, zero rejects and clean shutdown.
 - [x] Sustained controlled GPU benchmark runs and a portable Linux package/build guide are provided.
@@ -78,8 +121,9 @@ chain reward are separate observations.
 
 ## Evidence index
 
-Evidence is retained in the development workspace. File names below are under
-`out/bench/` unless otherwise stated.
+Historical evidence is retained in the development workspace, not in a fresh
+clone or release archive. File names below are under ignored `out/bench/` unless
+otherwise stated. The November 9 checks are linked above.
 
 | Requirement | Authoritative evidence |
 | --- | --- |

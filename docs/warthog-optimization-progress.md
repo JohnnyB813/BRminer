@@ -1,5 +1,11 @@
 # Warthog optimization progress
 
+Historical experiment log leading up to [the November 2 acceptance report](development-goal.md#november-2-2026-acceptance-report-historical).
+Defaults, test totals and next steps below belong to individual checkpoints;
+they are not current setup instructions. Use [the build guide](build.md),
+[current calibration controls](benchmark-calibration.md) and
+[current console behavior](warthog-portability.md#mining-console-windows-and-linux).
+
 Goal: reach or exceed BzMiner v100.60's **478.14 MH/s mean Janus score** in two
 five-minute BRminer runs, excluding the first 120 seconds of each run. Use the
 same local Stratum endpoint, 14 configured CPU threads, and one NVIDIA GPU as
@@ -120,13 +126,13 @@ An explicit 256-bit VAES rewrite of the two- and four-state AES rounds passed
 hash equivalence, but its single-thread probe fell from 1.97 to 1.78 MH/s, so
 it was removed without a full mining run.
 
-The current single-thread profile attributes approximately 94% of a full
+The single-thread profile at that checkpoint attributed approximately 94% of a full
 VerusHash v2.2 call to CLHash and key restoration; restoration is about 4% of
 the CLHash time. Keyed Haraka is a small fraction. The isolated 14-thread
 candidate check rose from 20.14 to 21.78 MH/s with the mutation log, whereas
 live mining reaches about 19.21 MH/s after raising the GPU candidate floor. A short BzMiner one-thread diagnostic
 reached about 2.5–2.6 MH/s versus BRminer's 1.92 MH/s full VerusHash probe.
-Current work: optimize the CLHash core and improve the GPU candidate supply to
+Next work identified at that checkpoint: optimize the CLHash core and improve the GPU candidate supply to
 the CPU verifiers.
 
 A three-lane CLHash variant matched consensus but its isolated 14-worker raw
@@ -147,8 +153,8 @@ backlog. This uses measured throughput rather than CPU or GPU model IDs.
 The CUDA kernel now precomputes three nonce-independent SHA rounds, the
 nonce-independent part of the fourth round, and two SHA schedule words on the
 host. The explicit CUDA candidate test and full eight-test CTest suite pass.
-The 64M nonce batch remains opt-in; the default is 16M. The current source
-retains the 4M candidate queue and 1,024-candidate CPU handoff. The qualifying
+At that checkpoint the 64M nonce batch was opt-in and the default was 16M. That source
+retained the 4M candidate queue and 1,024-candidate CPU handoff. The qualifying
 runs used `BRMINER_CUDA_BATCH_SIZE=67108864` and
 `BRMINER_CUDA_BLOCK_SIZE=256` with the optional NVRTC CUDA backend.
 

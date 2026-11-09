@@ -1,6 +1,6 @@
 # BRminer project knowledge graph
 
-Source snapshot: working tree, 2026-11-02. This map follows the shared Windows
+Source snapshot: `dev/contribute` development source, 2026-11-09. This map follows the shared Windows
 and Linux Warthog implementation and dependencies pinned in CMake.
 
 ## Component graph
@@ -27,7 +27,9 @@ flowchart LR
     pow --> submit[Queued submission]
     submit --> net
     net --> status[Server acceptance counters]
-    status --> console[Pinned table and event stream]
+    status --> console[Colored numeric dashboard and events]
+    runtime --> display[1s display sampler / rolling 10s rates]
+    display --> console
     runtime --> sensors[Optional NVML]
     sensors --> console
     sensors --> bench
@@ -49,7 +51,9 @@ Core. They share the executable/build, with independent workers and protocols.
 | Candidate → CPU | Workers consume batched candidates with their originating job, compute Verus/Janus targets and discard stale work. Empty queues allow direct CPU mining. `src/warthog_pow.cpp` dispatches optimized/portable hashing by instruction support. |
 | Solution → server | Found, submitted and accepted are distinct events. `mining.submit` sends job ID, extranonce2, timestamp and nonce. Only a positive server response increments acceptance. |
 | Nonce exhaustion → work | Live mining advances extranonce2 and rebuilds the latest pool job. Offline benchmarking advances its deterministic fixture epoch. |
-| Runtime → console | `src/warthog_console.cpp` pins one table and scrolls events below it on Windows/Linux terminals. Redirected output uses snapshots. Janus is primary; SHA and Verus rates support it. |
+| Runtime → console | `MiningRateWindow` supplies rolling ten-second live rates once per second, independently of the existing mining-control and benchmark sampling. `src/warthog_console.cpp` builds a colored numeric frame and writes only changed rows in one buffered update. The alternate screen and cursor are restored on exit. |
+| Network → console | Connection state, share/block counters and timestamped severity events update immediately. Repeated difficulty announcements are logged only when their numeric value changes. The dashboard keeps the newest events that fit its viewport. |
+| Terminal → output mode | `NO_COLOR` disables color; `BRMINER_CONSOLE=plain`, `TERM=dumb`, redirected stdout or diagnostic mode select plain snapshots/logs. Quiet benchmarks suppress output. See [console settings](warthog-portability.md#mining-console-windows-and-linux). |
 | Driver → sensors | `src/gpu_monitor.cpp` dynamically loads NVML. Missing readings show N/A and export JSON null. Monitoring is optional. |
 
 ## Benchmark and calibration
@@ -83,13 +87,13 @@ CMake scripts must track pinned upstream source changes.
 | Hash/equivalence tests | Known answers, optimized/portable equivalence, native batching and concurrent use. |
 | GPU tests | CUDA/OpenCL output versus CPU, filtering and overflow/retry. CUDA execution requires `BRMINER_NVRTC_DLL`; missing runtimes/devices explicitly skip execution. |
 | Config/calibration/benchmark | CLI constraints, profile/gain policy, atomic replacement, JSON statistics and CPU benchmark execution. |
-| Monitor/console | Optional NVML, unavailable readings, formatting and actual console/PTY scrolling and resizing. |
-| Stratum lifecycle | Synthetic jobs, acceptance/rejection, disconnect/reconnect and signal shutdown; separate from real-node acceptance. |
+| Monitor/console | Optional NVML, unavailable readings, numeric formatting, changed-row rendering, color/NO_COLOR, actual console/PTY resizing, one-second live refresh and terminal restoration. |
+| Stratum lifecycle | Synthetic jobs, acceptance/rejection, disconnect/reconnect, difficulty-change-only logs and signal shutdown; separate from real-node acceptance. |
 | Linux CPU emulation | Optional QEMU Intel Nehalem and AMD Opteron feature sets without AVX; correctness coverage only. |
 | Release smoke | `scripts/verify-release.py` checks fresh extraction with CPU or a separately installed CUDA compiler, optional alternate installed compiler, operation without NVML and relocated profile loading. |
 
 `scripts/package-release.ps1` builds/tests Windows Release, then packages
-libraries, generic launchers, documentation and notices.
+the statically linked executable, generic launchers, documentation and notices.
 `scripts/linux/package-release.py` packages a separately tested Linux ELF.
 Both write archive checksums; personal solo launchers are excluded.
 [The acceptance checklist](development-goal.md) records actual evidence and

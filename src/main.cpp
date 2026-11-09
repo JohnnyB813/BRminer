@@ -308,11 +308,14 @@ int main(int argc, char* argv[]) {
         }
         if (argc == 2 && std::string(argv[1]) == "--help") {
             std::cout << "BRminer Warthog mining\n"
-                "Usage: brminer.exe -a warthog -p HOST:PORT -w WALLET --cpu_threads N\n"
+                "Usage: brminer.exe -a warthog -p HOST:PORT -w WALLET [--cpu_threads N]\n"
                 "  -p, --pool          Stratum endpoint (stratum+tcp:// is optional)\n"
                 "  -w, --wallet        Warthog payout address\n"
-                "  -t, --cpu_threads   CPU threads (default: all logical threads)\n"
-                "CUDA is detected automatically from bundled NVRTC libraries.\n"
+                "  -t, --cpu_threads   Fixed CPU worker count (otherwise hardware-adaptive)\n"
+                "  --backend          auto, cuda, opencl, or cpu\n"
+                "CUDA uses a separately installed driver and NVRTC compiler; no CUDA libraries are bundled.\n"
+                "Interactive console: colored numeric rates, refreshed every second over a rolling 10s window.\n"
+                "  NO_COLOR=1 disables color; BRMINER_CONSOLE=plain selects logs and 10s snapshots.\n"
                 "Press Ctrl+C to stop.\n";
             std::cout << "Offline benchmark: brminer --benchmark --duration 300 --warmup 30 --json benchmark.json\n"
                 "  --backend auto|cuda|opencl|cpu  --threads N\n"

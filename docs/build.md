@@ -1,10 +1,14 @@
 # Build BRminer from source
 
-The source repository is [Brage321/BRminer](https://github.com/Brage321/BRminer).
+This fork is [JohnnyB813/BRminer](https://github.com/JohnnyB813/BRminer);
+the upstream project is [Brage321/BRminer](https://github.com/Brage321/BRminer).
+The examples below build this fork's `main` branch, including its updated
+console and Windows mouse-click pause fix. To reproduce the `v1.2.0` release
+source, replace `--branch main` with `--branch v1.2.0` in the clone command.
 Build Windows binaries on Windows and Linux binaries on Linux/WSL2; the
 source is shared, but this guide does not claim cross-compilation support.
 
-CMake fetches pinned ConnectCoin Core and JanusMiner sources. The first build
+CMake fetches pinned ConnectCoin Core, JanusMiner and Mbed TLS sources. The first build
 requires internet access and can take several minutes. CUDA headers, nvcc and
 NVRTC are not required to compile BRminer: the CUDA driver and runtime compiler
 are loaded dynamically when a user selects CUDA at runtime.
@@ -79,11 +83,12 @@ installed it elsewhere. If you already cloned BRminer, `cd` to that checkout
 instead of cloning it again:
 
 ```powershell
-git clone https://github.com/Brage321/BRminer.git
+git clone --branch main https://github.com/JohnnyB813/BRminer.git
 cd BRminer
 $env:VCPKG_ROOT = 'C:\vcpkg'
 & "$env:VCPKG_ROOT\vcpkg.exe" install boost-multi-index:x64-windows-static boost-tuple:x64-windows-static
 cmake -S . -B out/build/windows -G Ninja -DCMAKE_BUILD_TYPE=Release `
+  -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl `
   "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
   -DVCPKG_TARGET_TRIPLET=x64-windows-static `
   -DCMAKE_POLICY_DEFAULT_CMP0141=NEW -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded
@@ -92,6 +97,8 @@ ctest --test-dir out/build/windows --output-on-failure
 .\brminer.exe --pow-self-test
 ```
 
+Explicitly selecting `cl` keeps the Ninja build on MSVC when LLVM is also on
+`PATH`; `clang-cl` is used separately for the optimized hashing objects.
 The binary is written to the checkout root as `brminer.exe`. The MSVC runtime
 and Core dependencies are linked statically. If Ninja cannot find `cl.exe`,
 repeat step 2. Visual Studio generators also work: use
@@ -116,7 +123,7 @@ On Ubuntu 24.04:
 sudo apt-get update
 sudo apt-get install build-essential clang cmake ninja-build git ca-certificates \
   curl python3 libboost-dev libssl-dev pkg-config
-git clone https://github.com/Brage321/BRminer.git
+git clone --branch main https://github.com/JohnnyB813/BRminer.git
 cd BRminer
 cmake -S . -B out/build/linux -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
@@ -166,16 +173,24 @@ docker run --rm --mount "type=bind,source=$PWD,target=/workspace,readonly" \
 The script copies source into the native build volume, uses cached upstream
 sources when available, fetches them otherwise, then builds and runs CTest.
 Add `--gpus all` when the host supports NVIDIA GPU containers and you want
-GPU tests. In PowerShell, use backticks instead of shell backslashes for line
+GPU tests, and provide a Linux NVRTC compiler and matching builtins inside the
+container. GPU passthrough alone does not install NVRTC. See [CUDA setup](cuda-setup.md).
+In PowerShell, use backticks instead of shell backslashes for line
 continuations and `${PWD}` for the bind-mount source if needed.
+
+Test totals depend on installed optional tools and runtimes. The November 9
+development builds registered 18 Windows tests and 20 Linux tests with QEMU
+and pyte installed. `ctest --test-dir BUILD-DIRECTORY -N` lists the tests for
+your build. A passed GPU test binary can include an explicit device-execution
+skip when its runtime is unavailable.
 
 ## Check an extracted release
 
 Python is only needed for this developer check, not normal mining:
 
 ```sh
-python3 scripts/verify-release.py ./brminer --output out/release-check
-python3 scripts/verify-release.py ./brminer --backend cuda \
+python3 scripts/verify-release.py /path/to/extracted/brminer --output out/release-check
+python3 scripts/verify-release.py /path/to/extracted/brminer --backend cuda \
   --nvrtc-library /usr/local/cuda/lib64/libnvrtc.so.13 --output out/release-cuda-check
 ```
 

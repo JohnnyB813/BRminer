@@ -1,8 +1,8 @@
 # BzMiner calibration observations
 
-These observations use the saved local `bzminer-15m-internal.log`, which identifies
+These historical observations use the saved local `bzminer-15m-internal.log`, which identifies
 the tested executable as **v100.60**. A folder/archive name is not its runtime
-version. BzMiner's public repository currently exposes documentation and releases,
+version. The public repository examined for that comparison exposed documentation and releases,
 not the implementation of this calibration code.
 
 ## Observed local sequence
@@ -28,8 +28,8 @@ The evidence supports a capacity-and-balance approach: measure CPU Verus
 capacity and GPU SHA capacity, account for transfer limits, then adjust candidate
 flow while observing the combined pipeline. It does **not** establish the exact
 search algorithm, stopping condition, sample windows, kernel launch dimensions,
-or caching policy. We are implementing an independent staged planner, not
-claiming to reproduce the proprietary implementation.
+or caching policy. BRminer uses an independent staged planner. Its current
+controls and timing expectations are documented in [benchmark and calibration](benchmark-calibration.md).
 
 The public Warthog guide independently describes startup PCIe measurement,
 cache-aware worker planning, and a calibration phase of roughly two minutes.
@@ -57,6 +57,6 @@ one-GPU host. Report actual elapsed time; do not promise a fixed duration on all
 
 References:
 
-- [Local 15-minute BzMiner log](../out/bench/bzminer-15m-internal.log)
+- `out/bench/bzminer-15m-internal.log` (local development evidence; not included in the repository)
 - [BzMiner Warthog guide](https://www.bzminer.com/guides/warthog.php)
 - [BzMiner public documentation](https://github.com/bzminer/bzminer)
