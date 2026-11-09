@@ -1,5 +1,5 @@
 ﻿cmake_minimum_required(VERSION 3.22)
-project(BRminer VERSION 1.1.0 LANGUAGES C CXX)
+project(BRminer VERSION 1.2.0 LANGUAGES C CXX)
 
 include(FetchContent)
 include(CTest)

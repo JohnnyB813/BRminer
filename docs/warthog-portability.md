@@ -21,8 +21,8 @@ are not included. A normal Toolkit installation supplies the runtime; see
 [CUDA setup](cuda-setup.md).
 
 ```sh
-tar -xzf BRminer-1.1.0-linux-x64.tar.gz
-cd BRminer-1.1.0-linux-x64
+tar -xzf BRminer-1.2.0-linux-x64.tar.gz
+cd BRminer-1.2.0-linux-x64
 ./brminer -a warthog -p YOUR-NODE:3456 -w YOUR-WALLET --cpu_threads 14
 ./benchmark-warthog.sh
 ./calibrate-warthog.sh --full

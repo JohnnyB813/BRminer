@@ -2,9 +2,9 @@
 
 This fork is [JohnnyB813/BRminer](https://github.com/JohnnyB813/BRminer);
 the upstream project is [Brage321/BRminer](https://github.com/Brage321/BRminer).
-The examples below build this fork's `dev/contribute` branch, including its
-updated console. To reproduce the published `v1.1.0` source instead, replace
-`--branch dev/contribute` with `--branch v1.1.0` in the clone command.
+The examples below build this fork's `main` branch, including its updated
+console and Windows mouse-click pause fix. To reproduce the `v1.2.0` release
+source, replace `--branch main` with `--branch v1.2.0` in the clone command.
 Build Windows binaries on Windows and Linux binaries on Linux/WSL2; the
 source is shared, but this guide does not claim cross-compilation support.
 
@@ -83,7 +83,7 @@ installed it elsewhere. If you already cloned BRminer, `cd` to that checkout
 instead of cloning it again:
 
 ```powershell
-git clone --branch dev/contribute https://github.com/JohnnyB813/BRminer.git
+git clone --branch main https://github.com/JohnnyB813/BRminer.git
 cd BRminer
 $env:VCPKG_ROOT = 'C:\vcpkg'
 & "$env:VCPKG_ROOT\vcpkg.exe" install boost-multi-index:x64-windows-static boost-tuple:x64-windows-static
@@ -123,7 +123,7 @@ On Ubuntu 24.04:
 sudo apt-get update
 sudo apt-get install build-essential clang cmake ninja-build git ca-certificates \
   curl python3 libboost-dev libssl-dev pkg-config
-git clone --branch dev/contribute https://github.com/JohnnyB813/BRminer.git
+git clone --branch main https://github.com/JohnnyB813/BRminer.git
 cd BRminer
 cmake -S . -B out/build/linux -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++

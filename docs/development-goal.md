@@ -1,8 +1,8 @@
 # BRminer validation and acceptance reports
 
-## November 9, 2026 development-console validation
+## November 9, 2026 v1.2.0 console validation
 
-The `dev/contribute` source adds a colored numeric dashboard with each hashrate
+The `v1.2.0` source adds a colored numeric dashboard with each hashrate
 beside its label, one-second display refresh, rolling ten-second live rates,
 device telemetry and timestamped severity events. Changed rows are buffered into
 one write. `NO_COLOR` and plain-output modes are supported. Repeated difficulty
@@ -31,8 +31,10 @@ The reproducible checks are [console tests](../tests/warthog_console_tests.cpp),
 [Stratum lifecycle tests](../tests/stratum_lifecycle_test.py) and
 [release smoke verification](../scripts/verify-release.py).
 
-The published [v1.1.0 release](https://github.com/JohnnyB813/BRminer/releases/tag/v1.1.0)
-targets `b3b1ad9` and predates this console update. Current user instructions are
+The [v1.2.0 release](https://github.com/JohnnyB813/BRminer/releases/tag/v1.2.0)
+includes the console update and Windows Quick Edit fix. The earlier
+[v1.1.0 release](https://github.com/JohnnyB813/BRminer/releases/tag/v1.1.0)
+targets `b3b1ad9` and predates these changes. Current user instructions are
 in [the build guide](build.md), [console guide](warthog-portability.md#mining-console-windows-and-linux)
 and [benchmark/calibration guide](benchmark-calibration.md).
 

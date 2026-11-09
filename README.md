@@ -20,8 +20,8 @@ Toolkit installations automatically. See [CUDA setup](docs/cuda-setup.md) for
 supported tested versions, a ten-second check and nonstandard paths.
 Python and Visual Studio are not needed to run a release binary.
 Downloads are available from [this fork's releases](https://github.com/JohnnyB813/BRminer/releases).
-The published `v1.1.0` packages use the earlier console. Build `dev/contribute`
-from source for the updated mining display described below.
+The `v1.2.0` packages include the updated mining display and the Windows
+mouse-click pause fix described below. The same source is available on `main`.
 
 On Windows, edit the pool and wallet in `mining-warthog.bat`, then run it.
 For example, this leaves the CPU and CUDA launch settings hardware-adaptive:
