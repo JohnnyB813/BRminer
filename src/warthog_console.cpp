@@ -344,8 +344,11 @@ struct MiningConsole::Impl {
     int width{}, height{};
 #if defined(_WIN32)
     HANDLE output{GetStdHandle(STD_OUTPUT_HANDLE)};
+    HANDLE input{GetStdHandle(STD_INPUT_HANDLE)};
     DWORD original_mode{};
+    DWORD original_input_mode{};
     bool changed_mode{};
+    bool changed_input_mode{};
 #endif
 
     ~Impl() {
@@ -355,6 +358,7 @@ struct MiningConsole::Impl {
         }
 #if defined(_WIN32)
         if (changed_mode) SetConsoleMode(output, original_mode);
+        if (changed_input_mode) SetConsoleMode(input, original_input_mode);
 #endif
     }
 
@@ -406,7 +410,14 @@ void MiningConsole::start(std::string backend, std::uint32_t threads, bool diagn
     const char* no_color{std::getenv("NO_COLOR")};
     impl->color = !(no_color && *no_color);
 #if defined(_WIN32)
-    if (!diagnostics && !quiet && !plain && GetConsoleMode(impl->output, &impl->original_mode)) {
+    const bool console_output{GetConsoleMode(impl->output, &impl->original_mode) != 0};
+    if (!quiet && console_output && GetConsoleMode(impl->input, &impl->original_input_mode)) {
+        // Classic conhost blocks writes while Quick Edit has a mouse selection.
+        // Keep Ctrl+C and the other input settings, including in plain-log mode.
+        impl->changed_input_mode = SetConsoleMode(impl->input,
+            (impl->original_input_mode | ENABLE_EXTENDED_FLAGS) & ~ENABLE_QUICK_EDIT_MODE) != 0;
+    }
+    if (!diagnostics && !quiet && !plain && console_output) {
         impl->live = SetConsoleMode(impl->output,
             impl->original_mode | ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
         impl->changed_mode = impl->live;

@@ -6,6 +6,13 @@
 #include <chrono>
 #include <thread>
 #include <limits>
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <fstream>
+#endif
 
 namespace {
 
@@ -51,10 +58,68 @@ brminer::warthog::MiningDashboard exampleDashboard() {
     return model;
 }
 
+#if defined(_WIN32)
+// Run in an isolated, hidden console so tests never change the caller's modes.
+int windowsConsoleProbe(const std::string& status_path, const std::string& mode) {
+    using namespace brminer::warthog;
+    // Python redirects stdout using STARTF_USESTDHANDLES; explicitly keep this
+    // case's stdin attached to its new console, rather than inheriting a pipe.
+    if (mode == "redirected") {
+        const auto console_input{CreateFileW(L"CONIN$", GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr)};
+        if (console_input == INVALID_HANDLE_VALUE || !SetStdHandle(STD_INPUT_HANDLE, console_input)) return 6;
+    }
+    const auto input{GetStdHandle(STD_INPUT_HANDLE)};
+    const auto output{GetStdHandle(STD_OUTPUT_HANDLE)};
+    DWORD original_input{}, original_output{};
+    if (!GetConsoleMode(input, &original_input)) return 3;
+    const bool console_output{GetConsoleMode(output, &original_output) != 0};
+    const DWORD before{original_input | ENABLE_EXTENDED_FLAGS | ENABLE_QUICK_EDIT_MODE};
+    if (!SetConsoleMode(input, before)) return 4;
+    const bool quiet{mode == "quiet"};
+    DWORD active{}, restored{}, output_after{};
+    int tick{};
+    bool live{};
+    const auto status = [&](bool finished) {
+        GetConsoleMode(input, &active);
+        std::ofstream file{status_path, std::ios::trunc};
+        file << "{\"hwnd\":" << reinterpret_cast<std::uintptr_t>(GetConsoleWindow())
+             << ",\"tick\":" << tick << ",\"before\":" << before
+             << ",\"active\":" << active << ",\"live\":" << (live ? "true" : "false")
+             << ",\"finished\":" << (finished ? "true" : "false")
+             << ",\"restored\":" << restored << ",\"output_restored\":"
+             << (!console_output || output_after == original_output ? "true" : "false") << '}';
+    };
+    {
+        MiningConsole console;
+        console.start("CPU", 1, mode == "diagnostics", quiet, exampleDashboard().details);
+        live = console.isLive();
+        for (; tick < 120; ++tick) {
+            status(false);
+            auto stats{exampleDashboard().stats};
+            stats.uptime += tick;
+            console.update(stats);
+            console.event("SIMULATED console responsiveness check " + std::to_string(tick));
+            if (std::ifstream{status_path + ".stop"}.good()) break;
+            std::this_thread::sleep_for(std::chrono::milliseconds{50});
+        }
+    }
+    GetConsoleMode(input, &restored);
+    GetConsoleMode(output, &output_after);
+    status(true);
+    SetConsoleMode(input, original_input);
+    return restored == before && (!console_output || output_after == original_output) ? 0 : 5;
+}
+#endif
+
 } // namespace
 
 int main(int argc, char** argv) {
     using namespace brminer::warthog;
+#if defined(_WIN32)
+    if (argc == 4 && std::string{argv[1]} == "--windows-console-probe")
+        return windowsConsoleProbe(argv[2], argv[3]);
+#endif
     const MiningStats stats{3600, 477600000, 477700000, 1050000000, 100000,
         23680000, 1581733920120, 1, 0, 1};
     auto monitored{stats};

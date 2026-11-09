@@ -430,6 +430,11 @@ if(BUILD_TESTING)
     add_test(NAME warthog-stratum-lifecycle-tests
         COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/stratum_lifecycle_test.py" $<TARGET_FILE:brminer>)
     set_tests_properties(warthog-stratum-lifecycle-tests PROPERTIES TIMEOUT 30)
+    if(WIN32)
+        add_test(NAME warthog-windows-console-tests COMMAND "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/windows_console_test.py" $<TARGET_FILE:warthog-console-tests>)
+        set_tests_properties(warthog-windows-console-tests PROPERTIES TIMEOUT 40)
+    endif()
     if(UNIX AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
         find_program(BRMINER_QEMU_X86 NAMES qemu-x86_64)
         if(BRMINER_QEMU_X86)

@@ -179,7 +179,7 @@ In PowerShell, use backticks instead of shell backslashes for line
 continuations and `${PWD}` for the bind-mount source if needed.
 
 Test totals depend on installed optional tools and runtimes. The November 9
-development builds registered 17 Windows tests and 20 Linux tests with QEMU
+development builds registered 18 Windows tests and 20 Linux tests with QEMU
 and pyte installed. `ctest --test-dir BUILD-DIRECTORY -N` lists the tests for
 your build. A passed GPU test binary can include an explicit device-execution
 skip when its runtime is unavailable.

@@ -8,7 +8,7 @@ device telemetry and timestamped severity events. Changed rows are buffered into
 one write. `NO_COLOR` and plain-output modes are supported. Repeated difficulty
 values no longer produce duplicate event lines.
 
-Windows MSVC Release passed 17/17 CTest checks. Native Ubuntu 24.04/Clang 18 under
+Windows MSVC Release passed 18/18 CTest checks. Native Ubuntu 24.04/Clang 18 under
 Docker/WSL2 passed 20/20 with QEMU and pyte installed. The console checks cover
 numeric layouts, colors, `NO_COLOR`, resizing, immediate counters, terminal/cursor
 restoration and a real miner process refreshing before the ten-second control
@@ -19,8 +19,14 @@ their runtime is absent; Linux CUDA/OpenCL execution was not exercised in this
 console-update environment. These changes do not add sustained performance or
 public-pool measurements.
 
-The Windows live renderer was also exercised in a native pseudoconsole.
+The Windows live renderer was also exercised in a native pseudoconsole. An
+isolated hidden classic-console fixture verifies that mouse Quick Edit is
+disabled during dashboard, plain-log and diagnostic output, Ctrl+C and the other
+input flags are preserved, clicks and minimizing do not block refreshes, and
+input/output modes are restored on exit. Quiet and redirected output leave the
+input mode unchanged.
 The reproducible checks are [console tests](../tests/warthog_console_tests.cpp),
+[Windows console tests](../tests/windows_console_test.py),
 [Linux terminal tests](../tests/linux_terminal_test.py),
 [Stratum lifecycle tests](../tests/stratum_lifecycle_test.py) and
 [release smoke verification](../scripts/verify-release.py).

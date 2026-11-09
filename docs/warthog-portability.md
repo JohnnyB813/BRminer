@@ -55,6 +55,14 @@ missing sensors remain `N/A`. Per-GPU hashrates are not available on multi-GPU
 rigs, so their total stays in the top GPU SHA256t panel. Repeated Stratum
 difficulty messages appear only when the difficulty value changes.
 
+In the classic Windows console, BRminer temporarily disables mouse Quick Edit
+while showing the dashboard or plain logs. Quick Edit selection can block console
+writes and hold up mining; ordinary clicks therefore must not start a selection.
+Your original input settings are restored on exit, and Ctrl+C remains available.
+This uses the Windows [console input mode API](https://learn.microsoft.com/en-us/windows/console/setconsolemode).
+If an older build stops after a mouse click, press Enter or Esc to end the
+selection, then restart with the updated executable.
+
 Set a nonempty `NO_COLOR` value, such as `NO_COLOR=1`, to disable color while keeping the live dashboard. Set
 `BRMINER_CONSOLE=plain` for timestamped logs and ten-second text snapshots.
 Redirected output, `TERM=dumb`, diagnostic mode, and quiet benchmarks do not

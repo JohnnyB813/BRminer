@@ -143,7 +143,7 @@ BRminer does not contain a wallet.
 ## Validation and source map
 
 The tested host is a Ryzen 7 5800X / RTX 4060. On November 9, 2026, the development
-source passed 17 Windows tests and 20 native Ubuntu 24.04 tests under Docker/WSL2.
+source passed 18 Windows tests and 20 native Ubuntu 24.04 tests under Docker/WSL2.
 These cover hashing, configuration, calibration, the console and Stratum
 lifecycle. Linux also checks older AMD/Intel feature emulation and a real PTY.
 GPU execution checks require the appropriate installed runtime; their test
