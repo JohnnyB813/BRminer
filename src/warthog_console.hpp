@@ -6,6 +6,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <deque>
 #include <iomanip>
 #include <memory>
 #include <sstream>
@@ -24,6 +25,7 @@ inline std::string formatHashrate(double rate) {
 }
 
 inline std::string formatUptime(double seconds) {
+    if (!std::isfinite(seconds)) seconds = 0;
     const auto total{static_cast<std::uint64_t>(std::max(0.0, seconds))};
     std::ostringstream out;
     out << std::setfill('0') << std::setw(2) << total / 3600 << ':'
@@ -36,6 +38,49 @@ struct MiningStats {
     std::uint64_t accepted{}, rejected{}, blocks{};
     std::vector<GpuTelemetry> gpus;
 };
+
+enum class ConsoleEventLevel { info, success, warning, error };
+enum class MiningConnection { connecting, connected, waiting, mining, reconnecting, stopped };
+
+struct MiningConsoleDetails {
+    std::string pool, cpu, gpu, pipeline;
+};
+
+struct MiningEvent {
+    std::string time, message;
+    ConsoleEventLevel level{ConsoleEventLevel::info};
+};
+
+struct MiningDashboard {
+    MiningStats stats;
+    MiningConsoleDetails details;
+    std::string backend;
+    std::uint32_t threads{};
+    MiningConnection connection{MiningConnection::connecting};
+    std::deque<MiningEvent> events;
+};
+
+// The interactive display has its own rolling window. Mining control and benchmark
+// sampling keep their existing cadence and counters.
+class MiningRateWindow {
+public:
+    MiningStats sample(double uptime, std::uint64_t cpu_sha, std::uint64_t gpu_sha,
+                       std::uint64_t verus);
+private:
+    struct Counters {
+        double time;
+        std::uint64_t cpu_sha, gpu_sha, verus;
+    };
+    std::deque<Counters> samples;
+    double janus_work{}, start_time{};
+};
+
+// Render into rows first, then emit only changed rows in a single write. These
+// helpers also let terminal tests inspect the exact production display.
+std::vector<std::string> formatMiningDashboard(const MiningDashboard& dashboard,
+                                              int columns, int rows, bool color);
+std::string miningDashboardDelta(const std::vector<std::string>& previous,
+                                const std::vector<std::string>& next);
 
 inline std::string formatSensor(std::optional<double> value, const char* unit, int precision = 0) {
     if (!value || !std::isfinite(*value)) return "N/A";
@@ -129,10 +174,12 @@ public:
     ~MiningConsole();
     MiningConsole(const MiningConsole&) = delete;
     MiningConsole& operator=(const MiningConsole&) = delete;
-    void start(std::string backend, std::uint32_t threads, bool diagnostics = false, bool quiet = false);
+    void start(std::string backend, std::uint32_t threads, bool diagnostics = false, bool quiet = false,
+               MiningConsoleDetails details = {});
     void update(const MiningStats& stats);
     void shares(std::uint64_t accepted, std::uint64_t rejected, std::uint64_t blocks);
-    void event(const std::string& message);
+    void event(const std::string& message, ConsoleEventLevel level = ConsoleEventLevel::info);
+    void connection(MiningConnection status);
     void diagnostic(const std::string& line);
     bool isLive() const;
 private:

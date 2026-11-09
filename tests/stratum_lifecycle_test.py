@@ -24,8 +24,8 @@ def main():
         stream.write((json.dumps(message) + "\n").encode())
         stream.flush()
 
-    def job(stream, name, target="003fffff"):
-        send(stream, {"id": None, "method": "mining.set_difficulty", "params": [1e12]})
+    def job(stream, name, target="003fffff", difficulty=1e12):
+        send(stream, {"id": None, "method": "mining.set_difficulty", "params": [difficulty]})
         send(stream, {"id": None, "method": "mining.notify",
                       "params": [name, "00" * 32, "", "00000003", target, "00000001", True]})
 
@@ -52,7 +52,8 @@ def main():
                                 break
                             send(stream, {"id": request["id"], "result": False,
                                           "error": [23, "synthetic rejection", None]})
-                            job(stream, "steady-job", "00000000")
+                            job(stream, "steady-job", "00000000", 2e12)
+                            job(stream, "steady-job-final", "00000000", 2e12)
                             completed.set()
                         elif method == "mining.suggest_difficulty":
                             send(stream, {"id": request["id"], "result": False, "error": None})
@@ -79,7 +80,7 @@ def main():
         while time.monotonic() < deadline:
             text = "".join(output)
             if (completed.is_set() and "BLOCK ACCEPTED" in text and
-                    "BLOCK REJECTED" in text and "New job received: steady-job" in text):
+                    "BLOCK REJECTED" in text and "New job received: steady-job-final" in text):
                 break
             if process.poll() is not None:
                 raise AssertionError("Miner exited early:\n" + text)
@@ -89,11 +90,13 @@ def main():
         process.send_signal(signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGTERM)
         process.wait(timeout=6)
         reader.join(timeout=1)
+        text = "".join(output)
+        assert text.count("Share difficulty set to ") == 2, text
+        assert "Share difficulty set to 1e+12." in text and "Share difficulty set to 2e+12." in text, text
         if os.name != "nt":
             assert process.returncode == 0, "".join(output)
             assert "Mining stopped." in "".join(output)
-        print("Synthetic block acceptance/rejection and reconnect passed; Linux SIGTERM shutdown verified."
-              if os.name != "nt" else "Synthetic block acceptance/rejection and reconnect passed.")
+        print("Synthetic block acceptance/rejection, reconnect, and difficulty-change-only logging passed.")
     finally:
         if process.poll() is None:
             process.kill()

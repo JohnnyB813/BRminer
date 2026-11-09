@@ -8,6 +8,7 @@ OpenCL are optional GPU backends. BRminer takes no developer fee.
 - [Build from source](docs/build.md): Windows, Linux and Docker/WSL2.
 - [Optional NVIDIA CUDA setup](docs/cuda-setup.md): install the Toolkit yourself.
 - [Benchmark and calibration](docs/benchmark-calibration.md).
+- [Mining console and log output](docs/warthog-portability.md#mining-console-windows-and-linux).
 - [Verified results and hardware coverage](docs/development-goal.md).
 
 ## Get started with Warthog
@@ -18,6 +19,9 @@ Toolkit using its default/Express installation. BRminer detects standard
 Toolkit installations automatically. See [CUDA setup](docs/cuda-setup.md) for
 supported tested versions, a ten-second check and nonstandard paths.
 Python and Visual Studio are not needed to run a release binary.
+Downloads are available from [this fork's releases](https://github.com/JohnnyB813/BRminer/releases).
+The published `v1.1.0` packages use the earlier console. Build `dev/contribute`
+from source for the updated mining display described below.
 
 On Windows, edit the pool and wallet in `mining-warthog.bat`, then run it.
 For example, this leaves the CPU and CUDA launch settings hardware-adaptive:
@@ -85,12 +89,21 @@ for cache identity, retuning, promotion thresholds and repeatable comparisons.
 
 ## Mining display
 
-An interactive console keeps one table pinned above timestamped events for
-jobs, connection changes, submissions and acceptance/rejection. The table
-shows interval and average **combined Janus** rates, supporting GPU SHA256t and
-CPU Verus rates, share and block counters, difficulty and estimated share
-interval. The estimate is statistical, not a countdown. Resizing preserves
-recent events; redirected output uses plain text snapshots.
+An interactive terminal shows a colored numeric dashboard. **Combined Janus**,
+GPU SHA256t and CPU Verus rates appear directly beside their labels. The display
+refreshes once per second; live rates use a rolling ten-second window and
+`AVG` is the session average. Share and block counters update immediately.
+Difficulty and estimated share interval are also shown; the estimate is
+statistical, not a countdown.
+
+The event area shows jobs, connections and submission results with timestamps
+and severity colors. Difficulty announcements are logged initially and when
+the value changes. Resizing preserves recent events; long messages are clipped
+to one row. Ctrl+C stops mining and restores the normal terminal.
+
+Set `NO_COLOR=1` to disable color or `BRMINER_CONSOLE=plain` for timestamped logs
+and ten-second snapshots. Redirected output and `TERM=dumb` select plain output
+automatically. See [console settings and metric definitions](docs/warthog-portability.md#mining-console-windows-and-linux).
 
 Optional NVIDIA monitoring shows temperature, utilization, power, clocks and
 clock-limit reasons where supported. Unavailable values show `N/A` and JSON
@@ -129,11 +142,17 @@ BRminer does not contain a wallet.
 
 ## Validation and source map
 
-The tested host is a Ryzen 7 5800X / RTX 4060. Windows passed 16 tests and native
-Ubuntu 24.04 under Docker/WSL2 passed 19, including CUDA correctness and older
-AMD/Intel feature emulation. Final five-minute HeroMiners sessions accepted
-10 Windows and 14 Linux shares with zero rejects. Controlled benchmarks,
-profile invalidation, node reconnection and clean shutdown were also verified.
+The tested host is a Ryzen 7 5800X / RTX 4060. On November 9, 2026, the development
+source passed 17 Windows tests and 20 native Ubuntu 24.04 tests under Docker/WSL2.
+These cover hashing, configuration, calibration, the console and Stratum
+lifecycle. Linux also checks older AMD/Intel feature emulation and a real PTY.
+GPU execution checks require the appropriate installed runtime; their test
+binaries explicitly skip unavailable device checks.
+
+Earlier five-minute HeroMiners sessions, recorded on November 2, accepted
+10 Windows and 14 Linux shares with zero rejects. Those measurements and
+sustained performance results describe the builds in the dated acceptance
+report. The console update does not establish a new sustained performance result.
 
 These results do not establish performance on physical Intel systems,
 bare-metal Linux, other NVIDIA architectures or multi-GPU systems.

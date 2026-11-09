@@ -1,5 +1,11 @@
 # Warthog performance baseline and bottleneck analysis
 
+Historical report for the November 1 revision named below. Source line numbers,
+worker allocation and console behavior refer to that revision. Subsequent
+optimization and console changes are covered in [the acceptance reports](development-goal.md).
+Use [the build guide](build.md) and [benchmark guide](benchmark-calibration.md)
+for current commands.
+
 Recorded 2026-11-01 from the local Windows x64 Release build at fork commit `42688586ea70895656439e44dd5fa8da29819300`, including the source-build fixes and optional `BRMINER_BENCHMARK_TELEMETRY=1` counters in the working tree. A later direct check used the published V.3 executable. These are **interrupted comparisons**, not the requested two alternating 15-minute runs per miner. All miners were stopped at the user's request.
 
 ## Test conditions and measurements
@@ -65,4 +71,4 @@ flowchart LR
 
 ## Reproduction and limits
 
-The source build and four CTest targets passed on this machine before the live comparison; see [the build baseline](knowledge-graph.md#verified-source-build-baseline). The OpenCL test compared actual RTX 4060 results with CPU SHA256t results. The live BRminer run connected to Stratum and received a job. It did not submit a share before it was stopped, so this run does not independently prove pool acceptance. The BzMiner console rates are reported by a closed-source miner; their precise internal accounting was not independently audited. The measurements are therefore a useful performance baseline and a prioritized diagnosis, not a completed four-run verdict.
+The source build and four CTest targets passed on this machine before the live comparison. This is a historical result; [the build guide](build.md) describes current builds and test registration. The OpenCL test compared actual RTX 4060 results with CPU SHA256t results. The live BRminer run connected to Stratum and received a job. It did not submit a share before it was stopped, so this run does not independently prove pool acceptance. The BzMiner console rates are reported by a closed-source miner; their precise internal accounting was not independently audited. The measurements are therefore a useful performance baseline and a prioritized diagnosis, not a completed four-run verdict.

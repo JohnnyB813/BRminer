@@ -1,6 +1,12 @@
 # Draft GitHub issue for Brage321/BRminer
 
-Status: **draft only; not posted**. Target: [Brage321/BRminer issues](https://github.com/Brage321/BRminer/issues). Source checked: upstream `main` at [`42688586ea70895656439e44dd5fa8da29819300`](https://github.com/Brage321/BRminer/commit/42688586ea70895656439e44dd5fa8da29819300) on 2026-11-01.
+Status: **historical draft; not posted**. Target: [Brage321/BRminer issues](https://github.com/Brage321/BRminer/issues). Source checked: upstream `main` at [`42688586ea70895656439e44dd5fa8da29819300`](https://github.com/Brage321/BRminer/commit/42688586ea70895656439e44dd5fa8da29819300) on 2026-11-01.
+
+The proposed issue below describes that revision and its V.3 binary. Later work
+added optimized hashing, CUDA, adaptive tuning and the current numeric console;
+see [the acceptance reports](development-goal.md) and [architecture map](knowledge-graph.md)
+for the development branch's present state. Revalidate the draft against a
+specific upstream revision before using it for a new issue.
 
 ## Proposed title
 
@@ -21,7 +27,7 @@ The published [V.3 release](https://github.com/Brage321/BRminer/releases/tag/V.3
 
 The V.3 executable only displays total SHA256t and rounded average share time. I estimated Janus as `pool_difficulty / displayed_share_interval`, then inverted [the repository's Janus formula](https://github.com/Brage321/BRminer/blob/42688586ea70895656439e44dd5fa8da29819300/src/warthog_stratum.cpp#L845-L853) to estimate VerusHash. Against an instrumented source build, this method had under 0.85% maximum sample error for both rates. BRminer's direct CPU SHA contribution was only ~0.058 MH/s, so its displayed total SHA is a close approximation of GPU SHA. The release ZIP matched GitHub's published SHA-256 digest, and the tested executable matched its entry in that ZIP. Neither miner showed rejected shares. Zero BRminer shares over this short window at difficulty ~1.58 trillion does not establish a validity problem.
 
-### Source issues at the latest `main` commit
+### Source issues at the checked November 1 revision
 
 1. **The active VerusHash path uses portable primitives.** [BRminer's per-candidate call](https://github.com/Brage321/BRminer/blob/42688586ea70895656439e44dd5fa8da29819300/src/warthog_pow.cpp#L70-L85) constructs a new `VerusHasher`. [CMake pins JanusMiner](https://github.com/Brage321/BRminer/blob/42688586ea70895656439e44dd5fa8da29819300/CMakeLists.txt#L14-L18) and builds its portable CLHash source. At that pinned revision, the [optimized header is commented out](https://github.com/CoinFuMasterShifu/janusminer/blob/8d13b2bad00bde6ae10195f30ba3bec8824fd1cb/src/shared/src/crypto/verushash/verushash.cpp#L17-L19), and [`write()` and `finalize()` call portable Haraka/CLHash functions](https://github.com/CoinFuMasterShifu/janusminer/blob/8d13b2bad00bde6ae10195f30ba3bec8824fd1cb/src/shared/src/crypto/verushash/verushash.cpp#L173-L201). Each candidate also creates a fresh key with 276 Haraka256 expansion rounds. This is the first CPU stage to profile and optimize. The local MSVC patch returning false from `can_optimize()` is not by itself the cause: the active functions already use the portable path.
 2. **GPU work is serialized into small scans.** [`OpenClSha256tMiner::scan`](https://github.com/Brage321/BRminer/blob/42688586ea70895656439e44dd5fa8da29819300/src/warthog_gpu.cpp#L217-L267) caps a scan at 65,536 nonces, performs blocking header/counter uploads, waits for `clFinish`, then performs blocking reads and per-batch vector allocations. The next scan cannot overlap these operations. This is a plausible cause of the ~3× GPU SHA gap and ~51% utilization; profile kernel time and host/transfer/wait time separately before choosing a fix.
